@@ -135,7 +135,7 @@
             flex: 1;
             overflow-y: auto;
             padding: 20px;
-            padding-bottom: 70px; /* Space for bottom nav */
+            padding-bottom: 70px;
             -webkit-overflow-scrolling: touch;
         }
 
@@ -334,6 +334,13 @@
             justify-content: center;
             color: white;
             font-size: 20px;
+            overflow: hidden;
+        }
+
+        .shop-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
 
         .shop-info {
@@ -367,6 +374,7 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.05);
             transition: all 0.3s;
             cursor: pointer;
+            position: relative;
         }
 
         .product-card:active {
@@ -374,13 +382,31 @@
         }
 
         .product-image {
-            height: 120px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 140px;
+            background: #f3f4f6;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: white;
-            font-size: 32px;
+            color: #9ca3af;
+            font-size: 40px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .product-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s;
+        }
+
+        .product-card:hover .product-image img {
+            transform: scale(1.05);
+        }
+
+        .product-image .placeholder-icon {
+            font-size: 48px;
+            color: #9ca3af;
         }
 
         .product-info {
@@ -411,6 +437,30 @@
             margin-bottom: 12px;
         }
 
+        .stock-badge {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        .stock-badge.low-stock {
+            background: #ef4444;
+        }
+
+        .stock-badge.medium-stock {
+            background: #f59e0b;
+        }
+
+        .stock-badge.high-stock {
+            background: #10b981;
+        }
+
         .quantity-control {
             display: flex;
             align-items: center;
@@ -434,6 +484,11 @@
 
         .qty-btn:active {
             background: #d1d5db;
+        }
+
+        .qty-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
 
         .qty-value {
@@ -461,6 +516,33 @@
         }
 
         .cart-item-info {
+            flex: 1;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .cart-item-image {
+            width: 50px;
+            height: 50px;
+            border-radius: 8px;
+            object-fit: cover;
+            background: #f3f4f6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #9ca3af;
+            font-size: 20px;
+        }
+
+        .cart-item-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+
+        .cart-item-details {
             flex: 1;
         }
 
@@ -621,6 +703,40 @@
             100% { transform: rotate(360deg); }
         }
 
+        /* Skeleton Loading */
+        .skeleton {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+            border-radius: 8px;
+        }
+
+        .skeleton-product {
+            height: 200px;
+        }
+
+        .skeleton-image {
+            height: 140px;
+            width: 100%;
+        }
+
+        .skeleton-text {
+            height: 20px;
+            width: 80%;
+            margin: 8px auto;
+        }
+
+        .skeleton-text-small {
+            height: 16px;
+            width: 60%;
+            margin: 4px auto;
+        }
+
+        @keyframes loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
         /* Modal */
         .modal-overlay {
             position: fixed;
@@ -682,6 +798,16 @@
         }
 
         .close-btn:active {
+            background: #f3f4f6;
+        }
+
+        .modal-product-image {
+            width: 150px;
+            height: 150px;
+            border-radius: 12px;
+            object-fit: cover;
+            margin: 0 auto 16px;
+            display: block;
             background: #f3f4f6;
         }
 
@@ -837,8 +963,9 @@
     </div>
 
     <script type="module">
-        // Firebase imports
+        // Import Firebase SDKs
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js";
         import {
             getAuth,
             createUserWithEmailAndPassword,
@@ -853,11 +980,16 @@
             push,
             onValue,
             get,
-            update
+            update,
+            query,
+            orderByChild,
+            equalTo,
+            limitToLast,
+            off
         } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-        // Firebase Config
-const firebaseConfig = {
+        // Your Firebase configuration
+        const firebaseConfig = {
   apiKey: "AIzaSyAW6CfMFgdWPNLzgKIkm8sdjGPLPnnkRN4",
   authDomain: "shop-315c2.firebaseapp.com",
   databaseURL: "https://shop-315c2-default-rtdb.firebaseio.com",
@@ -866,9 +998,10 @@ const firebaseConfig = {
   messagingSenderId: "621506836891",
   appId: "1:621506836891:web:779a8fd86b338afeaa093e",
   measurementId: "G-NKRW07GLLT"
-};;
-
+};
+        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
         const auth = getAuth(app);
         const db = getDatabase(app);
 
@@ -884,6 +1017,10 @@ const firebaseConfig = {
         let currentFacingMode = 'environment';
         let scanMode = 'shop';
         let selectedPaymentMethod = null;
+
+        // Realtime listeners
+        let productsListener = null;
+        let shopListener = null;
 
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
@@ -1053,6 +1190,11 @@ const firebaseConfig = {
         function showTab(tab) {
             if (currentTab === 'scan' && tab !== 'scan') {
                 stopScanner();
+            }
+
+            // Clean up listeners when switching tabs
+            if (currentTab === 'products' && tab !== 'products') {
+                removeProductsListener();
             }
 
             currentTab = tab;
@@ -1345,7 +1487,8 @@ const firebaseConfig = {
                             name: product.name,
                             price: product.price,
                             quantity: 0,
-                            maxQty: product.qty
+                            maxQty: product.qty,
+                            imageUrl: product.imageUrl || null
                         };
                     }
 
@@ -1412,7 +1555,9 @@ const firebaseConfig = {
                         <p>Loading products...</p>
                     </div>
 
-                    <div class="product-grid" id="productGrid"></div>
+                    <div class="product-grid" id="productGrid">
+                        <!-- Products will be loaded here -->
+                    </div>
                 </div>
 
                 ${currentShop ? `
@@ -1423,7 +1568,7 @@ const firebaseConfig = {
             `;
 
             if (currentShop) {
-                loadShopProducts();
+                loadShopProductsRealtime();
             }
         }
 
@@ -1446,8 +1591,15 @@ const firebaseConfig = {
                         ` : cartItems.map(item => `
                             <div class="cart-item">
                                 <div class="cart-item-info">
-                                    <div class="cart-item-name">${item.name}</div>
-                                    <div class="cart-item-shop">${item.shopName}</div>
+                                    <div class="cart-item-image">
+                                        ${item.imageUrl ?
+                                            `<img src="${item.imageUrl}" alt="${item.name}" onerror="this.parentElement.innerHTML='📦';">` :
+                                            '📦'}
+                                    </div>
+                                    <div class="cart-item-details">
+                                        <div class="cart-item-name">${item.name}</div>
+                                        <div class="cart-item-shop">${item.shopName}</div>
+                                    </div>
                                 </div>
                                 <div class="cart-item-actions">
                                     <div style="display: flex; align-items: center; gap: 8px;">
@@ -1547,7 +1699,9 @@ const firebaseConfig = {
                         shopCard.onclick = () => selectShop(shop);
                         shopCard.innerHTML = `
                             <div class="shop-icon">
-                                🏪
+                                ${shop.shopImage ?
+                                    `<img src="${shop.shopImage}" alt="${shop.shopName}" onerror="this.parentElement.innerHTML='🏪';">` :
+                                    '🏪'}
                             </div>
                             <div class="shop-info">
                                 <div class="shop-name">${shop.shopName || 'Unnamed Shop'}</div>
@@ -1570,19 +1724,32 @@ const firebaseConfig = {
             }
         }
 
-        async function loadShopProducts() {
+        /**
+         * Load products with realtime updates
+         */
+        function loadShopProductsRealtime() {
             if (!currentShop) return;
 
             const productGrid = document.getElementById('productGrid');
             const loading = document.getElementById('productsLoading');
 
-            if (loading) loading.style.display = 'block';
-            if (productGrid) productGrid.innerHTML = '';
+            // Remove existing listener
+            removeProductsListener();
 
-            try {
-                const productsRef = ref(db, 'products/' + currentShop.id);
-                const snapshot = await get(productsRef);
+            // Show loading skeleton
+            if (productGrid) {
+                productGrid.innerHTML = '';
+                for (let i = 0; i < 4; i++) {
+                    const skeleton = document.createElement('div');
+                    skeleton.className = 'skeleton skeleton-product';
+                    productGrid.appendChild(skeleton);
+                }
+            }
 
+            // Set up realtime listener
+            const productsRef = ref(db, 'products/' + currentShop.id);
+
+            productsListener = onValue(productsRef, (snapshot) => {
                 currentProducts = [];
 
                 if (snapshot.exists()) {
@@ -1594,55 +1761,109 @@ const firebaseConfig = {
                             ...childSnapshot.val()
                         };
                         currentProducts.push(product);
-
-                        if (productGrid) {
-                            const productCard = document.createElement('div');
-                            productCard.className = 'product-card';
-                            productCard.onclick = () => showProductModal(product);
-                            productCard.innerHTML = `
-                                <div class="product-image">
-                                    ${product.name.charAt(0).toUpperCase()}
-                                </div>
-                                <div class="product-info">
-                                    <div class="product-name">${product.name}</div>
-                                    <div class="product-price">₹${product.price}</div>
-                                    <div class="product-qty">Stock: ${product.qty}</div>
-                                    <button onclick="event.stopPropagation(); addToCart('${product.id}')" class="btn btn-primary btn-small" style="margin-top: 8px;">
-                                        Add to Cart
-                                    </button>
-                                </div>
-                            `;
-                            productGrid.appendChild(productCard);
-                        }
                     });
-                } else {
-                    if (productGrid) {
-                        productGrid.innerHTML = `
-                            <div class="empty-state" style="grid-column: 1 / -1;">
-                                <div class="empty-state-icon">📦</div>
-                                <p>No products available</p>
-                            </div>
-                        `;
-                    }
+
+                    // Sort products by name or added date
+                    currentProducts.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
                 }
-            } catch (error) {
+
+                // Update UI
+                renderProducts(productGrid);
+
+                if (loading) loading.style.display = 'none';
+            }, (error) => {
+                console.error('Error loading products:', error);
                 if (productGrid) {
                     productGrid.innerHTML = `
                         <div class="empty-state" style="grid-column: 1 / -1;">
                             <div class="empty-state-icon">⚠️</div>
                             <p>Error loading products</p>
+                            <button onclick="loadShopProductsRealtime()" class="btn btn-primary" style="margin-top: 16px;">Retry</button>
                         </div>
                     `;
                 }
+                if (loading) loading.style.display = 'none';
+            });
+        }
+
+        /**
+         * Render products in grid with images
+         */
+        function renderProducts(container) {
+            if (!container) return;
+
+            if (currentProducts.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state" style="grid-column: 1 / -1;">
+                        <div class="empty-state-icon">📦</div>
+                        <p>No products available</p>
+                    </div>
+                `;
+                return;
             }
 
-            if (loading) loading.style.display = 'none';
+            container.innerHTML = '';
+
+            currentProducts.forEach(product => {
+                const productCard = document.createElement('div');
+                productCard.className = 'product-card';
+                productCard.onclick = () => showProductModal(product);
+
+                // Determine stock level for badge
+                let stockClass = 'high-stock';
+                let stockText = 'In Stock';
+
+                if (product.qty === 0) {
+                    stockClass = 'low-stock';
+                    stockText = 'Out of Stock';
+                } else if (product.qty <= 5) {
+                    stockClass = 'low-stock';
+                    stockText = 'Low Stock';
+                } else if (product.qty <= 20) {
+                    stockClass = 'medium-stock';
+                    stockText = 'Medium Stock';
+                }
+
+                productCard.innerHTML = `
+                    <div class="product-image">
+                        ${product.imageUrl ?
+                            `<img src="${product.imageUrl}" alt="${product.name}" loading="lazy" onerror="this.parentElement.innerHTML='<div class=\'placeholder-icon\'>📦</div>';">` :
+                            '<div class="placeholder-icon">📦</div>'}
+                        <span class="stock-badge ${stockClass}">${stockText}</span>
+                    </div>
+                    <div class="product-info">
+                        <div class="product-name">${product.name}</div>
+                        <div class="product-price">₹${product.price}</div>
+                        <div class="product-qty">Available: ${product.qty}</div>
+                        <button onclick="event.stopPropagation(); addToCart('${product.id}')" class="btn btn-primary btn-small" style="margin-top: 8px;" ${product.qty === 0 ? 'disabled' : ''}>
+                            ${product.qty === 0 ? 'Out of Stock' : 'Add to Cart'}
+                        </button>
+                    </div>
+                `;
+
+                container.appendChild(productCard);
+            });
+        }
+
+        /**
+         * Remove products realtime listener
+         */
+        function removeProductsListener() {
+            if (productsListener) {
+                off(productsListener);
+                productsListener = null;
+            }
         }
 
         // Cart Functions
         function addToCart(productId) {
             const product = currentProducts.find(p => p.id === productId);
             if (!product) return;
+
+            if (product.qty === 0) {
+                showToast('Product is out of stock');
+                return;
+            }
 
             const cartItemId = `${product.shopId}_${productId}`;
 
@@ -1655,7 +1876,8 @@ const firebaseConfig = {
                     name: product.name,
                     price: product.price,
                     quantity: 0,
-                    maxQty: product.qty
+                    maxQty: product.qty,
+                    imageUrl: product.imageUrl || null
                 };
             }
 
@@ -1831,7 +2053,7 @@ const firebaseConfig = {
             }
 
             try {
-                // Simulate payment processing
+                // Show processing
                 showToast('Processing payment...');
 
                 // Save order to database
@@ -1888,14 +2110,9 @@ const firebaseConfig = {
                     generateAndDownloadBill(order);
                 }, 1000);
 
-                // Refresh products
-                if (currentShop) {
-                    loadShopProducts();
-                }
-
             } catch (error) {
                 console.error('Payment error:', error);
-                showToast('Payment failed');
+                showToast('Payment failed: ' + error.message);
             }
         }
 
@@ -2142,6 +2359,8 @@ const firebaseConfig = {
 
         async function logoutCustomer() {
             try {
+                // Clean up listeners
+                removeProductsListener();
                 await signOut(auth);
             } catch (error) {
                 console.error('Logout error:', error);
@@ -2241,6 +2460,7 @@ const firebaseConfig = {
 
         function clearShopSelection() {
             currentShop = null;
+            removeProductsListener();
             showMainApp();
             showTab('shops');
         }
@@ -2255,14 +2475,17 @@ const firebaseConfig = {
                         <button class="close-btn" onclick="this.parentElement.parentElement.parentElement.remove()">×</button>
                     </div>
                     <div style="text-align: center;">
-                        <div style="font-size: 48px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">
-                            ${product.name.charAt(0).toUpperCase()}
-                        </div>
+                        ${product.imageUrl ?
+                            `<img src="${product.imageUrl}" alt="${product.name}" class="modal-product-image" onerror="this.style.display='none'; this.parentElement.innerHTML+='<div style=\'font-size: 48px; margin: 20px;\'>📦</div>';">` :
+                            `<div style="font-size: 48px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">
+                                ${product.name.charAt(0).toUpperCase()}
+                            </div>`
+                        }
                         <div style="color: #059669; font-weight: bold; font-size: 24px; margin: 16px 0;">₹${product.price}</div>
                         <div style="color: #6b7280; margin-bottom: 16px;">Available: ${product.qty} units</div>
                         <div style="color: #6b7280; margin-bottom: 24px;">Shop: ${product.shopName}</div>
-                        <button onclick="addToCart('${product.id}'); this.parentElement.parentElement.parentElement.parentElement.remove();" class="btn btn-primary">
-                            Add to Cart
+                        <button onclick="addToCart('${product.id}'); this.parentElement.parentElement.parentElement.parentElement.remove();" class="btn btn-primary" ${product.qty === 0 ? 'disabled' : ''}>
+                            ${product.qty === 0 ? 'Out of Stock' : 'Add to Cart'}
                         </button>
                     </div>
                 </div>
@@ -2291,6 +2514,12 @@ const firebaseConfig = {
             }
         }
 
+        // Clean up on page unload
+        window.addEventListener('beforeunload', () => {
+            removeProductsListener();
+            stopScanner();
+        });
+
         // Make functions globally accessible
         window.registerCustomer = registerCustomer;
         window.loginCustomer = loginCustomer;
@@ -2314,7 +2543,7 @@ const firebaseConfig = {
         window.processPayment = processPayment;
         window.downloadReceipt = downloadReceipt;
 
-        console.log('Mobile Customer app initialized');
+        console.log('Mobile Customer app initialized with image support and realtime updates');
     </script>
 </body>
 </html>
